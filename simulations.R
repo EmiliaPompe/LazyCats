@@ -14,7 +14,7 @@ VG=function(sigma, nu, mu, T, N) {
   return(X)
 }
 
-
+CGMY=function(sigma,nu,mu,Y,T,N)
 VG_increments=function(sigma, nu, mu, T, N) {
   a=1/nu
   b=1/nu
@@ -36,18 +36,18 @@ BM_increments <- function(sigma, T, N, theta =0){
   return(B_inc)
 }
 
-eta_p = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) + (mu*nu)/2
-eta_n = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) - (mu*nu)/2
-C = 1/nu
-G = 1/eta_n
-M = 1/eta_p
 
-CGMY=function(C,G,M,Y,T,N) {
+CGMY=function(sigma,nu,mu,Y,T,N) {
   h=T/N
   t=(0:T)/N
+  eta_p = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) + (mu*nu)/2
+  eta_n = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) - (mu*nu)/2
+  C = 1/nu
+  G = 1/eta_n
+  M = 1/eta_p
   A=(G-M)/2
   B=(G+M)/2
-  f=function(y){exp(-(B^2-A^2)*y/2)*cgamma(Y)*CGMY_f(y,Y,B)/(cgamma(Y/2)*2^(Y/2-1))}
+  f=function(y){exp(-(B^2-A^2)*y/2)*gamma(Y)*CGMY_f(y,Y,B)/(gamma(Y/2)*2^(Y/2-1))}
   X=rep(0, N+1)
   I=rep(0,N)
   probJ=rep(0,N)
@@ -62,9 +62,14 @@ CGMY=function(C,G,M,Y,T,N) {
   return(X)
 }
 
-CGMY_increments=function(C,G,M,Y,T,N) {
+CGMY_increments=function(sigma,nu,mu,Y,T,N) {
   h=T/N
   t=(0:T)/N
+  eta_p = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) + (mu*nu)/2
+  eta_n = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) - (mu*nu)/2
+  C = 1/nu
+  G = 1/eta_n
+  M = 1/eta_p
   A=(G-M)/2
   B=(G+M)/2
   f=function(y){exp(-(B^2-A^2)*y/2)*cgamma(Y)*CGMY_f(y,Y,B)/(cgamma(Y/2)*2^(Y/2-1))}
@@ -141,6 +146,15 @@ bm_simulation <- BM_increments(sigma=sigma_hat, T=length(x_observations), N=N, t
 
 plot(1:length(x_observations), cumsum(x_observations), ylim = c(-2,2))
 lines(seq(from =1, to=length(x_observations), length.out = N), cumsum(bm_simulation), col = 'blue')
+
+#-----------------------------------
+# comparison to the CGMY Model
+
+CGMY_simulation <- CGMY_increments(sigma=sigma_hat, nu=nu_hat, mu=0, Y=1 , T=length(x_observations), N=N)
+
+plot 1:length(x_observations), cumsum(x_observations), ylim = c(-2,2))
+lines(seq(from =1, to=length(x_observations), length.out = N), cumsum(CGMY_simulation), col = 'blue')
+
 
 
 #------------------------------------
