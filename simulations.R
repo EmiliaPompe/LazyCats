@@ -36,6 +36,52 @@ BM_increments <- function(sigma, T, N, theta =0){
   return(B_inc)
 }
 
+eta_p = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) + (mu*nu)/2
+eta_n = sqrt(((mu^2*nu^2)/4)+((sigma^2*nu)/2)) - (mu*nu)/2
+C = 1/nu
+G = 1/eta_n
+M = 1/eta_p
+
+CGMY=function(C,G,M,Y,T,N) {
+  h=T/N
+  t=(0:T)/N
+  A=(G-M)/2
+  B=(G+M)/2
+  f=function(y){exp(-(B^2-A^2)*y/2)*cgamma(Y)*CGMY_f(y,Y,B)/(cgamma(Y/2)*2^(Y/2-1))}
+  X=rep(0, N+1)
+  I=rep(0,N)
+  probJ=rep(0,N)
+  J=(0:(N-1))*h + h
+  for (j in 1:N) {probJ[[j]]<-f(J[[j]])}
+  randf=sample(J,N,probJ,replace=TRUE)
+  X[1]=0
+  for(i in 1:N) {
+    I[i]=randf[[i]]
+    X[i+1]=X[i] + A*I[i]+sqrt(I[i])*rnorm(1)
+  }
+  return(X)
+}
+
+CGMY_increments=function(C,G,M,Y,T,N) {
+  h=T/N
+  t=(0:T)/N
+  A=(G-M)/2
+  B=(G+M)/2
+  f=function(y){exp(-(B^2-A^2)*y/2)*cgamma(Y)*CGMY_f(y,Y,B)/(cgamma(Y/2)*2^(Y/2-1))}
+  inc=rep(0, N)
+  I=rep(0,N)
+  probJ=rep(0,N)
+  J=(0:(N-1))*h + h
+  for (j in 1:N) {probJ[[j]]<-f(J[[j]])}
+  randf=sample(J,N,probJ,replace=TRUE)
+  X[1]=0
+  for(i in 1:N) {
+    I[i]=randf[[i]]
+    inc[i]= A*I[i]+sqrt(I[i])*rnorm(1)
+  }
+  return(X)
+}
+
 # ---------------------------
 # downloading data
 
