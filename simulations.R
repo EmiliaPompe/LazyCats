@@ -29,6 +29,13 @@ VG_increments=function(sigma, nu, mu, T, N) {
   return(inc)
 }
 
+
+BM_increments <- function(sigma, T, N, theta =0){
+  drift <- theta*seq(from = 0, to=T, length.out = N)
+  B_inc <- sigma*rnorm(N,0,1)*sqrt((T/N)) + drift
+  return(B_inc)
+}
+
 # ---------------------------
 # downloading data
 
@@ -65,7 +72,7 @@ lines(density(rnorm(length(x_observations), m=0, sd = sd(x_observations))), col=
 lines(density(x_vg_inc), col='green')
 
 #----------------------------------------------
-# generating from the 
+# generating from the VG distribution
 N <- 3*length(x_observations)
 x_vg_inc <- VG_increments(sigma_hat, nu=nu_hat, mu=0, T=length(x_observations), N)
 
@@ -82,15 +89,68 @@ plot(1:length(x_observations), cumsum(x_observations), ylim = c(-2,2))
 lines(seq(from =1, to=length(x_observations), length.out = N), cumsum(x_vg_inc), col = 'blue')
 
 #-----------------------------------
+# comparison to the Brownian Motion
+
+bm_simulation <- BM_increments(sigma=sigma_hat, T=length(x_observations), N=N, theta =0)
+
+plot(1:length(x_observations), cumsum(x_observations), ylim = c(-2,2))
+lines(seq(from =1, to=length(x_observations), length.out = N), cumsum(bm_simulation), col = 'blue')
 
 
-
-
-# curtosis, skewness
-
-
-BM_inc <- function(sigma, T, N, theta =0){
-  drift <- theta*seq(from = 0, to=T, length.out = N)
-  B <- sigma*rnorm(N,0,1)*sqrt((T/N)) + drift
+#------------------------------------
+# comparing MSE of BM and VG
+MSE <- function(bm, vg, real_data){
+  mse_bm <- (bm - real_data)^2/length(real_data)
+  mse_vg <- (vg - real_data)^2/length(real_data)
+  return(c(mse_bm, mse_vg))
 }
 
+#----------------------------------
+# moments
+#install.packages('moments')
+library(moments)
+
+skewness(rnorm(10000000,0,1))
+kurtosis(rnorm(10000000,0,100))
+
+
+#---------------------------------
+# full comparison
+bm_simulation <- BM_increments(sigma=sigma_hat, T=length(x_observations), N=length(x_observations), theta =0)
+vg_simulation <- VG_increments(sigma = sigma_hat, nu = nu_hat, mu=0, T=length(x_observations), N=length(x_observations))
+
+MSE(bm_simulation, vg_simulation, x_observations)
+skewness(x_observations)
+kurtosis(x_observations)
+
+kurtosis(bm_simulation)
+skewness(bm_simulation)
+
+kurtosis(vg_simulation)
+skewness(vg_simulation)
+
+#---------------------------------
+n_iter <- 100
+bm_data <- t(sapply(1:n_iter, function(k){
+  bm_simulation <- BM_increments(sigma=sigma_hat, T=length(x_observations), N=length(x_observations), theta =0)
+  return(c(kurtosis(bm_simulation), skewness(bm_simulation)))
+}))
+
+bm_data<- as.data.frame(bm_data)
+colnames(bm_data) <- c("kurtosis", "skewness")
+
+vg_data <- t(sapply(1:n_iter, function(k){
+  vg_simulation <- VG_increments(sigma = sigma_hat, nu = nu_hat, mu=0, T=length(x_observations), N=length(x_observations))
+  return(c(kurtosis(vg_simulation), skewness(vg_simulation)))
+}))
+
+vg_data<- as.data.frame(vg_data)
+colnames(vg_data) <- c("kurtosis", "skewness")
+
+comparison_data = rbind(bm_data, vg_data)
+comparison_data$process <- rep(c('Brownian Motion', 'Variance-Gamma'), each = n_iter)
+
+
+library(ggplot2)
+p1 <- ggplot(comparison_data, aes(x=kurtosis)) + geom_histogram() + facet_grid(.~process)
+p1
